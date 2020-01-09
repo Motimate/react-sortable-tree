@@ -152,55 +152,13 @@ class ReactSortableTree extends Component {
       .subscribeToStateChange(this.handleDndMonitorChange);
   }
 
-  static getDerivedStateFromProps(nextProps, prevState) {
-    const { instanceProps } = prevState;
-    const newState = {};
-
-    const isTreeDataEqual = isEqual(instanceProps.treeData, nextProps.treeData);
-
-    // make sure we have the most recent version of treeData
-    instanceProps.treeData = nextProps.treeData;
-
-    if (!isTreeDataEqual) {
-      if (instanceProps.ignoreOneTreeUpdate) {
-        instanceProps.ignoreOneTreeUpdate = false;
-      } else {
-        newState.searchFocusTreeIndex = null;
-        ReactSortableTree.loadLazyChildren(nextProps, prevState);
-        Object.assign(
-          newState,
-          ReactSortableTree.search(nextProps, prevState, false, false, false)
-        );
-      }
-
-      newState.draggingTreeData = null;
-      newState.draggedNode = null;
-      newState.draggedMinimumTreeIndex = null;
-      newState.draggedDepth = null;
-      newState.dragging = false;
-    } else if (!isEqual(instanceProps.searchQuery, nextProps.searchQuery)) {
-      Object.assign(
-        newState,
-        ReactSortableTree.search(nextProps, prevState, true, true, false)
-      );
-    } else if (
-      instanceProps.searchFocusOffset !== nextProps.searchFocusOffset
-    ) {
-      Object.assign(
-        newState,
-        ReactSortableTree.search(nextProps, prevState, true, true, true)
-      );
-    }
-
-    instanceProps.searchQuery = nextProps.searchQuery;
-    instanceProps.searchFocusOffset = nextProps.searchFocusOffset;
-    newState.instanceProps = instanceProps;
-
-    return newState;
-  }
-
   // listen to dragging
   componentDidUpdate(prevProps, prevState) {
+    const instanceProps = {...prevState.instanceProps};
+    const newState = { ...this.state };
+    // make sure we have the most recent version of treeData
+    const isTreeDataEqual = isEqual(instanceProps.treeData, this.props.treeData);
+
     // if it is not the same then call the onDragStateChanged
     if (this.state.dragging !== prevState.dragging) {
       if (this.props.onDragStateChanged) {
@@ -210,6 +168,36 @@ class ReactSortableTree extends Component {
         });
       }
     }
+
+    instanceProps.treeData = this.props.treeData;
+
+    if (!isTreeDataEqual) {
+      if (instanceProps.ignoreOneTreeUpdate) {
+        instanceProps.ignoreOneTreeUpdate = false;
+      } else {
+        newState.searchFocusTreeIndex = null;
+        ReactSortableTree.loadLazyChildren(this.props, prevState);
+        Object.assign(newState, ReactSortableTree.search(this.props, prevState, false, false, false));
+      }
+
+      newState.draggingTreeData = null;
+      newState.draggedNode = null;
+      newState.draggedMinimumTreeIndex = null;
+      newState.draggedDepth = null;
+      newState.dragging = false;
+    } else if (!isEqual(instanceProps.searchQuery, this.props.searchQuery)) {
+      Object.assign(newState, ReactSortableTree.search(this.props, prevState, true, true, false));
+    } else if (instanceProps.searchFocusOffset !== this.props.searchFocusOffset) {
+      Object.assign(newState, ReactSortableTree.search(this.props, prevState, true, true, true));
+    }
+
+    instanceProps.searchQuery = this.props.searchQuery;
+    instanceProps.searchFocusOffset = this.props.searchFocusOffset;
+    newState.instanceProps = instanceProps;
+
+    if (isEqual(newState, prevState)) return;
+
+    this.setState(newState); // eslint-disable-line
   }
 
   componentWillUnmount() {
